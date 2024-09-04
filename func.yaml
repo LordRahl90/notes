@@ -1,0 +1,4 @@
+specVersion: 0.36.0
+name: notes
+runtime: go
+created: 2024-09-05T01:22:25.535378+02:00

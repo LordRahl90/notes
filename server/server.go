@@ -39,7 +39,8 @@ func New() *Server {
 
 	router.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"message": "pong",
+			"version": "v2",
+			"message": "PONG V2",
 			"time":    time.Now().String(),
 		})
 		return
