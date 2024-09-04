@@ -1,0 +1,7 @@
+services:
+  notes:
+    image: lordrahl/notes
+    container_name: notes
+    build: .
+    ports:
+      - "8001:8181"
