@@ -2,6 +2,33 @@ services:
   notes:
     image: lordrahl/notes
     container_name: notes
+    depends_on:
+      - otel-lgtm
     build: .
     ports:
-      - "8001:8181"
+      - "8001:80"
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-lgtm:4318
+    networks:
+      - notes
+
+  otel-lgtm:
+    image: grafana/otel-lgtm
+    container_name: otel-lgtm
+    ports:
+      - "3000:3000"
+      - "4317:4317"
+      - "4318:4318"
+      - "9090:9090"
+    volumes:
+      - ./container/grafana:/data/grafana
+      - ./container/prometheus:/data/prometheus
+      - ./container/loki:/loki
+    environment:
+      - GF_PATHS_DATA=/data/grafana
+    networks:
+      - notes
+
+networks:
+  notes:
+    driver: bridge

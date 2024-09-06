@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"log"
 	"log/slog"
 	"os"
@@ -11,6 +10,7 @@ import (
 
 	"notes/server"
 
+	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
