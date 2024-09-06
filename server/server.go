@@ -1,6 +1,8 @@
 package server
 
 import (
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -30,7 +32,11 @@ type NoteReq struct {
 
 // New returns a new
 func New() *Server {
-	router := gin.Default()
+	router := gin.New()
+	router.Use(
+		gin.Recovery(),
+		otelgin.Middleware("notes"),
+	)
 	database = make(map[string]Note)
 
 	s := &Server{
@@ -38,11 +44,12 @@ func New() *Server {
 	}
 
 	router.GET("/ping", func(c *gin.Context) {
+		slog.InfoContext(c.Request.Context(), "pong", "time", time.Now().String())
 		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
 			"time":    time.Now().String(),
 		})
-		return
+		slog.InfoContext(c.Request.Context(), "all completed!", "time", time.Now().String())
 	})
 	router.POST("/", s.create)
 	router.GET("/", s.all)
@@ -50,6 +57,7 @@ func New() *Server {
 	return s
 }
 
+// Start starts the server
 func (s *Server) Start(port string) error {
 	return s.router.Run(port)
 }
