@@ -2,6 +2,10 @@ package main
 
 import (
 	"context"
+	"errors"
+	"github.com/getsentry/sentry-go"
+	"github.com/google/uuid"
+	slogmulti "github.com/samber/slog-multi"
 	"log"
 	"log/slog"
 	"os"
@@ -36,15 +40,30 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	if err := setupOtel(ctx); err != nil {
+	err := sentry.Init(sentry.ClientOptions{
+		Dsn: "https://2b4ca728309c454895d70a3274dd1d90@app.glitchtip.com/8011",
+		//Dsn: "https://21907032037b4790a4ca161e0fec8689@app.glitchtip.com/1",
+	})
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	logger := otelslog.NewLogger("notes")
-	slog.SetDefault(logger)
+	sentry.CaptureException(errors.New("sentry error handling"))
+	sentry.Flush(time.Second * 3)
 
-	logger.InfoContext(ctx, "starting up")
-	slog.InfoContext(ctx, "starting up see slog")
+	if err := setupOtel(ctx); err != nil {
+		sentry.CaptureException(err)
+		log.Fatal(err)
+	}
+
+	//logger := otelslog.NewLogger("notes")
+	logger := slogmulti.Fanout(otelslog.NewHandler("notes"), slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelDebug,
+	}))
+	slog.SetDefault(slog.New(logger))
+
+	slog.InfoContext(ctx, "starting up see slog", "day", "today", "time",
+		time.Now(), "item", uuid.NewString(), "content", `{"message": "hello world"}`)
 
 	svr := server.New()
 	appPort := os.Getenv("APP_PORT")
@@ -56,7 +75,7 @@ func main() {
 
 	svrErr := make(chan error, 1)
 	go func() {
-		slog.InfoContext(ctx, "starting server", "port", appPort)
+		slog.InfoContext(ctx, "starting server", "app_port", appPort)
 		svrErr <- svr.Start(appPort)
 	}()
 
@@ -109,6 +128,7 @@ func setupOtel(ctx context.Context) error {
 		sdkTrace.WithResource(
 			resource.NewWithAttributes("notes",
 				attribute.String("service.name", "notes"),
+				attribute.String("environment", "dev"),
 				attribute.String("app.version", "1.0.0")),
 		),
 	)
@@ -125,6 +145,7 @@ func setupOtel(ctx context.Context) error {
 		metric.WithResource(
 			resource.NewWithAttributes("notes",
 				attribute.String("service.name", "notes"),
+				attribute.String("environment", "dev"),
 				attribute.String("app.version", "1.0.0")),
 		),
 	)
@@ -139,6 +160,7 @@ func setupOtel(ctx context.Context) error {
 		otelLog.WithResource(
 			resource.NewWithAttributes("notes",
 				attribute.String("service.name", "notes"),
+				attribute.String("environment", "dev"),
 				attribute.String("app.version", "1.0.0")),
 		),
 		otelLog.WithProcessor(

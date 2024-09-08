@@ -8,7 +8,9 @@ services:
     ports:
       - "8001:80"
     environment:
+      OTEL_EXPORTER_OTLP_INSECURE: "true"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-lgtm:4318
+      OTEL_METRIC_EXPORT_INTERVAL: "5000"
     networks:
       - notes
 
