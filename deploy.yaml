@@ -1,0 +1,41 @@
+# Demo Notes deployment
+apiVersion: v1
+kind: Service
+metadata:
+  name: notes
+  labels:
+    app: notes
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+  selector:
+    app: notes
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notes
+  labels:
+    app: notes
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notes
+  template:
+    metadata:
+      labels:
+        app: notes
+    spec:
+      containers:
+        - name: notes
+          image: lordrahl/notes
+          env:
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: http://lgtm:4318
+          ports:
+            - containerPort: 80

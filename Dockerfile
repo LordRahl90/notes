@@ -15,6 +15,6 @@ FROM scratch
 
 COPY --from=builder /app/notes /notes
 
-EXPOSE 8181
+EXPOSE 80
 # Run
 CMD ["/notes"]
