@@ -2,16 +2,17 @@ package server
 
 import (
 	"errors"
-	"github.com/getsentry/sentry-go"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
-	"go.opentelemetry.io/otel/attribute"
+
 	"log/slog"
 	"net/http"
 	"notes/tracing"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 var database map[string]Note
