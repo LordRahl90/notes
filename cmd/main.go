@@ -3,18 +3,17 @@ package main
 import (
 	"context"
 	"errors"
-	"github.com/getsentry/sentry-go"
-	"github.com/google/uuid"
-	slogmulti "github.com/samber/slog-multi"
 	"log"
 	"log/slog"
 	"os"
-
 	"os/signal"
 	"time"
 
 	"notes/server"
 
+	"github.com/getsentry/sentry-go"
+	"github.com/google/uuid"
+	slogmulti "github.com/samber/slog-multi"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel"
