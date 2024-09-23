@@ -15,12 +15,6 @@ import (
 	"time"
 )
 
-type noteRes struct {
-	ID      string `json:"id"`
-	Title   string `json:"title"`
-	Content string `json:"content"`
-}
-
 func TestMain(m *testing.M) {
 	code := 1
 	defer func() {
