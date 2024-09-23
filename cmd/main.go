@@ -56,7 +56,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	//logger := otelslog.NewLogger("notes")
 	logger := slogmulti.Fanout(otelslog.NewHandler("notes"), slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
 	}))

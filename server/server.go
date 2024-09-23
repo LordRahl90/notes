@@ -17,6 +17,7 @@ import (
 
 var database map[string]Note
 
+// Server is the server
 type Server struct {
 	router *gin.Engine
 }
