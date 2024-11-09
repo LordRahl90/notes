@@ -37,7 +37,7 @@ func TestPing(t *testing.T) {
 
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &res))
 	assert.Equal(t, "v2", res.Version)
-	assert.Equal(t, "PONG V2", res.Message)
+	assert.Equal(t, "PONG V2 Redeployed", res.Message)
 	assert.Equal(t, time.Now().Format(time.DateOnly), strings.Split(res.Time, " ")[0])
 }
 
