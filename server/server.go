@@ -66,7 +66,7 @@ func New() *Server {
 		slog.InfoContext(c.Request.Context(), "pong", "time", time.Now().String(), "client", c.ClientIP())
 		c.JSON(http.StatusOK, gin.H{
 			"version": "v2",
-			"message": "PONG V2",
+			"message": "PONG V2 Redeployed",
 			"time":    time.Now().String(),
 		})
 		slog.InfoContext(c.Request.Context(), "all completed!", "time", time.Now().String(), "client", c.ClientIP(), "method", c.Request.Method)
