@@ -43,7 +43,7 @@ func TestPing(t *testing.T) {
 
 func TestCreate(t *testing.T) {
 	req := NoteReq{
-		Title:   "title",
+		Title:   "titles",
 		Content: "content",
 	}
 
