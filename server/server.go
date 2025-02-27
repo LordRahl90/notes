@@ -1,8 +1,8 @@
 package server
 
 import (
+	"context"
 	"errors"
-
 	"log/slog"
 	"net/http"
 	"notes/tracing"
@@ -64,6 +64,11 @@ func New() *Server {
 		sentry.CaptureException(errors.New("sentry error handling"))
 		span.SetAttributes(attribute.String("client", c.ClientIP()))
 		slog.InfoContext(c.Request.Context(), "pong", "time", time.Now().String(), "client", c.ClientIP())
+
+		if err := waitService(c.Request.Context()); err != nil {
+			slog.ErrorContext(c.Request.Context(), "wait service failed", "time", time.Now().String(), "client", c.ClientIP(), "error", err)
+		}
+
 		c.JSON(http.StatusOK, gin.H{
 			"version": "v2",
 			"message": "PONG V2 Redeployed",
@@ -80,6 +85,26 @@ func New() *Server {
 // Start starts the server
 func (s *Server) Start(port string) error {
 	return s.router.Run(port)
+}
+
+func waitService(ctx context.Context) error {
+	ctx, span := tracing.Tracer().Start(ctx, "wait")
+	defer span.End()
+	time.Sleep(4 * time.Second)
+
+	slog.InfoContext(ctx, "Wait service has completed")
+
+	innerWaitService(ctx)
+
+	return nil
+}
+
+func innerWaitService(ctx context.Context) {
+	ctx, span := tracing.Tracer().Start(ctx, "inner")
+	defer span.End()
+
+	time.Sleep(500 * time.Microsecond)
+	return
 }
 
 func (s *Server) create(ctx *gin.Context) {

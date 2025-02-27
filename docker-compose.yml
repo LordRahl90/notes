@@ -18,7 +18,7 @@ services:
     image: grafana/otel-lgtm
     container_name: otel-lgtm
     ports:
-      - "3000:3000"
+      - "3010:3000"
       - "4317:4317"
       - "4318:4318"
       - "9090:9090"

@@ -3,16 +3,17 @@ package server
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/gin-gonic/gin"
-	"github.com/go-playground/assert/v2"
-	"github.com/google/uuid"
-	"github.com/stretchr/testify/require"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-playground/assert/v2"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMain(m *testing.M) {
