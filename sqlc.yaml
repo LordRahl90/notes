@@ -1,0 +1,8 @@
+version: "2"
+servers: []
+sql: []
+overrides:
+    go: null
+plugins: []
+rules: []
+options: {}
