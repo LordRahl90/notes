@@ -3,21 +3,23 @@ package server
 import (
 	"context"
 	"errors"
+	"github.com/Cyprinus12138/otelgin"
 	"log/slog"
 	"net/http"
-	"notes/tracing"
 	"time"
+
+	"notes/tracing"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	//"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"go.opentelemetry.io/otel/attribute"
 )
 
 var database map[string]Note
 
-// Server is the server
+// Server is the server :)
 type Server struct {
 	router *gin.Engine
 }

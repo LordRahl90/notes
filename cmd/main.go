@@ -127,7 +127,7 @@ func setupOtel(ctx context.Context) error {
 		sdkTrace.WithResource(
 			resource.NewWithAttributes("notes",
 				attribute.String("service.name", "notes"),
-				attribute.String("environment", "dev"),
+				attribute.String("environment", os.Getenv("ENVIRONMENT")),
 				attribute.String("app.version", "1.0.0")),
 		),
 	)
@@ -144,7 +144,7 @@ func setupOtel(ctx context.Context) error {
 		metric.WithResource(
 			resource.NewWithAttributes("notes",
 				attribute.String("service.name", "notes"),
-				attribute.String("environment", "dev"),
+				attribute.String("environment", os.Getenv("ENVIRONMENT")),
 				attribute.String("app.version", "1.0.0")),
 		),
 	)
@@ -155,11 +155,12 @@ func setupOtel(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
 	logProvider = otelLog.NewLoggerProvider(
 		otelLog.WithResource(
 			resource.NewWithAttributes("notes",
 				attribute.String("service.name", "notes"),
-				attribute.String("environment", "dev"),
+				attribute.String("environment", os.Getenv("ENVIRONMENT")),
 				attribute.String("app.version", "1.0.0")),
 		),
 		otelLog.WithProcessor(

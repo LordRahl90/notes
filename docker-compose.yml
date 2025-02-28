@@ -31,6 +31,35 @@ services:
     networks:
       - notes
 
+  database:
+    image: mysql:8.0
+    container_name: notes-database
+    ports:
+      - "33060:3306"
+    environment:
+      MYSQL_USER: notes_user
+      MYSQL_PASSWORD: p@ssword
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: notes
+    networks:
+      - notes
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.16.3
+    container_name: elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      discovery.type: single-node
+    volumes:
+      - elasticdata:/usr/share/elasticsearch/data
+    networks:
+      - notes
+
+volumes:
+  elasticdata:
+    driver: local
+
 networks:
   notes:
     driver: bridge
