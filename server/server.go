@@ -5,8 +5,9 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"notes/services/tracing"
 	"time"
+
+	"notes/services/tracing"
 
 	"github.com/Cyprinus12138/otelgin"
 	"github.com/getsentry/sentry-go"
@@ -21,20 +22,6 @@ var database map[string]Note
 // Server is the server :)
 type Server struct {
 	router *gin.Engine
-}
-
-// Note a basic notes struct
-type Note struct {
-	ID        string    `json:"id"`
-	Title     string    `json:"title"`
-	Content   string    `json:"note"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-// NoteReq request for creating notes
-type NoteReq struct {
-	Title   string `json:"title"`
-	Content string `json:"note"`
 }
 
 func logMiddleware() gin.HandlerFunc {
@@ -118,6 +105,7 @@ func (s *Server) create(ctx *gin.Context) {
 
 	note := Note{
 		ID:        uuid.NewString(),
+		UserID:    req.UserID,
 		CreatedAt: time.Now(),
 		Title:     req.Title,
 		Content:   req.Content,
