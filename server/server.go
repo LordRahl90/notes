@@ -101,11 +101,10 @@ func waitService(ctx context.Context) error {
 }
 
 func innerWaitService(ctx context.Context) {
-	ctx, span := tracing.Tracer().Start(ctx, "inner")
+	_, span := tracing.Tracer().Start(ctx, "inner")
 	defer span.End()
 
 	time.Sleep(500 * time.Microsecond)
-	return
 }
 
 func (s *Server) create(ctx *gin.Context) {
