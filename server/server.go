@@ -6,9 +6,8 @@ import (
 	"github.com/Cyprinus12138/otelgin"
 	"log/slog"
 	"net/http"
+	"notes/services/tracing"
 	"time"
-
-	"notes/tracing"
 
 	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"

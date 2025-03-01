@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS notes
+(
+    id         BIGINT PRIMARY KEY AUTO_INCREMENT,
+    note_id    VARCHAR(100) NOT NULL,
+    title      VARCHAR(100) NOT NULL,
+    content    VARCHAR(100) NOT NULL,
+    user_id    VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP,
+    UNIQUE (note_id)
+);

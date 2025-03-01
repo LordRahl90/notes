@@ -1,8 +1,15 @@
 version: "2"
-servers: []
-sql: []
+servers: [ ]
+sql:
+  - engine: mysql
+    queries: "queries"
+    schema: "migrations"
+    gen:
+      go:
+        package: "repositories"
+        out: "repositories"
 overrides:
-    go: null
-plugins: []
-rules: []
-options: {}
+  go: null
+plugins: [ ]
+rules: [ ]
+options: { }

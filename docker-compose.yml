@@ -3,14 +3,21 @@ services:
     image: lordrahl/notes
     container_name: notes
     depends_on:
+      - database
       - otel-lgtm
     build: .
     ports:
       - "8001:80"
     environment:
+      ENVIRONMENT: deployed
       OTEL_EXPORTER_OTLP_INSECURE: "true"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-lgtm:4318
       OTEL_METRIC_EXPORT_INTERVAL: "5000"
+      DB_USER: notes_user
+      DB_PASSWORD: p@ssword
+      DB_HOST: database
+      DB_NAME: notes
+      DB_PORT: 3306
     networks:
       - notes
 

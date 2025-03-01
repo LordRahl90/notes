@@ -2,59 +2,53 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"fmt"
 	"log"
 	"log/slog"
 	"os"
 	"os/signal"
 	"time"
 
+	"notes/migrations"
 	"notes/server"
+	"notes/services/tracing"
 
 	"github.com/getsentry/sentry-go"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/mysql"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/google/uuid"
+	"github.com/joho/godotenv"
 	slogmulti "github.com/samber/slog-multi"
 	"go.opentelemetry.io/contrib/bridges/otelslog"
-	"go.opentelemetry.io/contrib/instrumentation/runtime"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace"
-	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
-	"go.opentelemetry.io/otel/log/global"
-	"go.opentelemetry.io/otel/propagation"
-	otelLog "go.opentelemetry.io/otel/sdk/log"
-	"go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/resource"
-	sdkTrace "go.opentelemetry.io/otel/sdk/trace"
-)
-
-var (
-	traceProvider *sdkTrace.TracerProvider
-	meterProvider *metric.MeterProvider
-	logProvider   *otelLog.LoggerProvider
 )
 
 func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	err := sentry.Init(sentry.ClientOptions{
-		Dsn: "https://2b4ca728309c454895d70a3274dd1d90@app.glitchtip.com/8011",
-		//Dsn: "https://21907032037b4790a4ca161e0fec8689@app.glitchtip.com/1",
-	})
-	if err != nil {
-		log.Fatal(err)
+	env := os.Getenv("ENVIRONMENT")
+	if env == "" || env == "dev" {
+		if err := godotenv.Load(); err != nil {
+			log.Fatal(err)
+		}
 	}
 
-	sentry.CaptureException(errors.New("sentry error handling"))
-	sentry.Flush(time.Second * 3)
-
-	if err := setupOtel(ctx); err != nil {
+	shutdown, err := tracing.SetupOtel(ctx)
+	if err != nil {
 		sentry.CaptureException(err)
 		log.Fatal(err)
 	}
+	defer func() {
+		if err := shutdown(ctx); err != nil {
+			sentry.CaptureException(err)
+			log.Fatal(err)
+		}
+	}()
 
 	logger := slogmulti.Fanout(otelslog.NewHandler("notes"), slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
@@ -63,6 +57,25 @@ func main() {
 
 	slog.InfoContext(ctx, "starting up see slog", "day", "today", "time",
 		time.Now(), "item", uuid.NewString(), "content", `{"message": "hello world"}`)
+
+	db, err := setupDB(ctx)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to setup db", "error", err)
+		return
+	}
+	defer func() {
+		if err := db.Close(); err != nil {
+			slog.ErrorContext(ctx, "failed to close db", "error", err)
+		}
+	}()
+
+	if err := migrateDatabase(ctx, db); err != nil {
+		if !errors.Is(err, migrate.ErrNoChange) {
+			log.Fatal(err)
+		}
+
+		slog.InfoContext(ctx, "database is already up to date", "error", err)
+	}
 
 	svr := server.New()
 	appPort := os.Getenv("APP_PORT")
@@ -88,87 +101,54 @@ func main() {
 		stop()
 	}
 
-	shutDownCtx := context.Background()
-	if traceProvider != nil {
-		if err := traceProvider.Shutdown(shutDownCtx); err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	if meterProvider != nil {
-		if err := meterProvider.Shutdown(ctx); err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	if logProvider != nil {
-		if err := logProvider.Shutdown(ctx); err != nil {
-			log.Fatal(err)
-		}
-	}
-
 	slog.Info("shutdown complete")
 }
 
-func setupOtel(ctx context.Context) error {
-	prop := propagation.NewCompositeTextMapPropagator(
-		propagation.TraceContext{},
-		propagation.Baggage{},
-	)
-	otel.SetTextMapPropagator(prop)
-	slog.Info("text propagator configured")
-
-	traceExporter, err := otlptrace.New(ctx, otlptracehttp.NewClient())
+func setupDB(ctx context.Context) (*sql.DB, error) {
+	slog.InfoContext(ctx, "Setting up database")
+	dsn := getDsn()
+	db, err := sql.Open("mysql", dsn)
 	if err != nil {
-		return err
+		return nil, fmt.Errorf("cannot connect to db: %w", err)
 	}
-	traceProvider = sdkTrace.NewTracerProvider(
-		sdkTrace.WithBatcher(traceExporter),
-		sdkTrace.WithResource(
-			resource.NewWithAttributes("notes",
-				attribute.String("service.name", "notes"),
-				attribute.String("environment", os.Getenv("ENVIRONMENT")),
-				attribute.String("app.version", "1.0.0")),
-		),
-	)
-	otel.SetTracerProvider(traceProvider)
-	slog.Info("tracer provider configured")
+	slog.InfoContext(ctx, "Database connection opened")
+	if err := db.PingContext(ctx); err != nil {
+		return nil, fmt.Errorf("cannot ping db: %w", err)
+	}
+	slog.InfoContext(ctx, "all is well and good with db initialization")
+	return db, nil
+}
 
-	metricExporter, err := otlpmetrichttp.New(ctx)
+func migrateDatabase(ctx context.Context, db *sql.DB) error {
+	slog.InfoContext(ctx, "Migrating database")
+	// This is important to initialize the driver
+	// this might be a bug in golang-migrate, but I'm not sure just yet
+	_, err := mysql.WithInstance(db, &mysql.Config{})
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot connect to db: %w", err)
 	}
+	slog.InfoContext(ctx, "driver initialized")
 
-	meterProvider = metric.NewMeterProvider(
-		metric.WithReader(metric.NewPeriodicReader(metricExporter)),
-		metric.WithResource(
-			resource.NewWithAttributes("notes",
-				attribute.String("service.name", "notes"),
-				attribute.String("environment", os.Getenv("ENVIRONMENT")),
-				attribute.String("app.version", "1.0.0")),
-		),
-	)
-	otel.SetMeterProvider(meterProvider)
-	slog.Info("meter provider configured")
+	dsn := fmt.Sprintf("mysql://%s", getDsn())
 
-	logExporter, err := otlploghttp.New(ctx, otlploghttp.WithInsecure())
+	source, err := iofs.New(migrations.Migrations, ".")
 	if err != nil {
 		return err
 	}
 
-	logProvider = otelLog.NewLoggerProvider(
-		otelLog.WithResource(
-			resource.NewWithAttributes("notes",
-				attribute.String("service.name", "notes"),
-				attribute.String("environment", os.Getenv("ENVIRONMENT")),
-				attribute.String("app.version", "1.0.0")),
-		),
-		otelLog.WithProcessor(
-			otelLog.NewBatchProcessor(logExporter),
-		),
-	)
-	global.SetLoggerProvider(logProvider)
-	slog.Info("logger provider configured")
+	m, err := migrate.NewWithSourceInstance("iofs", source, dsn)
+	if err != nil {
+		return err
+	}
 
-	return runtime.Start(runtime.WithMinimumReadMemStatsInterval(time.Second))
+	return m.Up()
+}
+
+func getDsn() string {
+	return fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&timeout=5s",
+		os.Getenv("DB_USER"),
+		os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_HOST"),
+		os.Getenv("DB_PORT"),
+		os.Getenv("DB_NAME"))
 }
