@@ -5,11 +5,11 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"notes/services/entities"
 	"time"
 
 	"notes/services/tracing"
 
-	"github.com/Cyprinus12138/otelgin"
 	"github.com/getsentry/sentry-go"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
-var database map[string]Note
+var database map[string]entities.Note
 
 // Server is the server :)
 type Server struct {
@@ -37,10 +37,10 @@ func New() *Server {
 	router := gin.New()
 	router.Use(
 		gin.Recovery(),
-		otelgin.Middleware("notes"),
+		//otelgin.Middleware("notes"),
 		logMiddleware(),
 	)
-	database = make(map[string]Note)
+	database = make(map[string]entities.Note)
 
 	s := &Server{
 		router: router,
@@ -95,7 +95,7 @@ func innerWaitService(ctx context.Context) {
 }
 
 func (s *Server) create(ctx *gin.Context) {
-	var req NoteReq
+	var req entities.NoteReq
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
@@ -103,7 +103,7 @@ func (s *Server) create(ctx *gin.Context) {
 		return
 	}
 
-	note := Note{
+	note := entities.Note{
 		ID:        uuid.NewString(),
 		UserID:    req.UserID,
 		CreatedAt: time.Now(),

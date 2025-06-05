@@ -19,8 +19,10 @@ rollback-migration:
 create-migration:
 	 migrate create -ext sql -dir $(path) $(name)
 
+test:
+	go test -v ./... --cover
+
 
 am: apply-migration
 rollback: rollback-migration
 cm: create-migration
-

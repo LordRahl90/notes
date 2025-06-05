@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"notes/services/entities"
 	"os"
 	"strings"
 	"testing"
@@ -43,7 +44,7 @@ func TestPing(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	req := NoteReq{
+	req := entities.NoteReq{
 		Title:   "titles",
 		Content: "content",
 	}
@@ -56,7 +57,7 @@ func TestCreate(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, w.Code)
 
 	var (
-		res, getRes Note
+		res, getRes entities.Note
 	)
 
 	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &res))
@@ -81,6 +82,9 @@ func TestCreate_BadRequest(t *testing.T) {
 
 func TestGet_FindNonExistentNote(t *testing.T) {
 	svr := New()
+	if svr.router == nil {
+		t.Fatal("server router is not initialized")
+	}
 	w, err := newTestRequest(svr.router, http.MethodGet, "/123", nil)
 	require.NoError(t, err)
 	assert.Equal(t, http.StatusNotFound, w.Code)
@@ -88,7 +92,7 @@ func TestGet_FindNonExistentNote(t *testing.T) {
 
 func TestGet_All(t *testing.T) {
 	svr := New()
-	database[uuid.NewString()] = Note{
+	database[uuid.NewString()] = entities.Note{
 		ID:        uuid.NewString(),
 		CreatedAt: time.Now(),
 		Title:     "title",
@@ -113,6 +117,7 @@ func newTestRequest(router *gin.Engine, method, path string, payload []byte) (*h
 	if err != nil {
 		return nil, err
 	}
+
 	router.ServeHTTP(w, req)
 	return w, nil
 }
